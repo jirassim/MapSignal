@@ -1,4 +1,5 @@
 export type Platform = 'polymarket' | 'kalshi' | 'opinion'
+export type CollateralAsset = 'pUSD'
 
 export interface MarketEvent {
   id: string
@@ -12,6 +13,7 @@ export interface MarketEvent {
   volume: number
   volume24h?: number
   liquidity?: number
+  collateralAsset?: CollateralAsset
   endDate?: string
   country?: string
   countryCode?: string

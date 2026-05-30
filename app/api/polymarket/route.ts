@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-const GAMMA_API = 'https://gamma-api.polymarket.com'
-const CLOB_API = 'https://clob.polymarket.com'
-
-const ALLOWED = ['events', 'markets', 'prices-history', 'book']
+import {
+  POLYMARKET_REQUEST_TIMEOUT_MS,
+  isAllowedPolymarketReadEndpoint,
+  normalizePolymarketQuery,
+  resolvePolymarketHost,
+} from '../../../lib/polymarket-config'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const endpoint = searchParams.get('endpoint') || 'events'
 
-  if (endpoint.includes('..') || !ALLOWED.some(e => endpoint === e || endpoint.startsWith(e + '/'))) {
+  if (endpoint.includes('..') || !isAllowedPolymarketReadEndpoint(endpoint)) {
     return NextResponse.json({ error: 'Invalid endpoint' }, { status: 400 })
   }
 
@@ -18,12 +19,15 @@ export async function GET(request: NextRequest) {
     if (key !== 'endpoint') params.set(key, value)
   })
 
-  const baseUrl = (endpoint.startsWith('prices-history') || endpoint.startsWith('book'))
-    ? CLOB_API : GAMMA_API
+  const baseUrl = resolvePolymarketHost(endpoint)
+  const normalizedParams = normalizePolymarketQuery(endpoint, params)
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), POLYMARKET_REQUEST_TIMEOUT_MS)
 
   try {
-    const res = await fetch(`${baseUrl}/${endpoint}?${params}`, {
+    const res = await fetch(`${baseUrl}/${endpoint}?${normalizedParams}`, {
       next: { revalidate: 60 },
+      signal: controller.signal,
     })
     if (!res.ok) {
       return NextResponse.json({ error: `Upstream: ${res.status}` }, { status: res.status })
@@ -33,9 +37,15 @@ export async function GET(request: NextRequest) {
       headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120' },
     })
   } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      return NextResponse.json({ error: 'Polymarket request timeout' }, { status: 504 })
+    }
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
+  } finally {
+    clearTimeout(timeoutId)
   }
 }

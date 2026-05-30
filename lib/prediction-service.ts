@@ -1,5 +1,6 @@
 import { MarketEvent, CountryData, Platform, Category } from './types'
 import { detectCountry, detectCategory } from './country-mapping'
+import { POLYMARKET_COLLATERAL_ASSET } from './polymarket-config'
 
 const CACHE_TTL = 60_000 // 1 minute
 let cachedData: { countries: Map<string, CountryData>; events: MarketEvent[]; ts: number } | null = null
@@ -38,6 +39,7 @@ async function fetchPolymarketEvents(): Promise<MarketEvent[]> {
         volume: totalVolume,
         volume24h: event.volume24hr || 0,
         liquidity: event.liquidity || 0,
+        collateralAsset: POLYMARKET_COLLATERAL_ASSET,
         endDate: event.endDate,
         country: country?.name,
         countryCode: country?.code,
@@ -257,10 +259,10 @@ export function getCountryColorClass(probability: number): string {
 }
 
 export function formatVolume(vol: number): string {
-  if (vol >= 1_000_000_000) return `$${(vol / 1_000_000_000).toFixed(1)}B`
-  if (vol >= 1_000_000) return `$${(vol / 1_000_000).toFixed(1)}M`
-  if (vol >= 1_000) return `$${(vol / 1_000).toFixed(1)}K`
-  return `$${vol.toFixed(0)}`
+  if (vol >= 1_000_000_000) return `${(vol / 1_000_000_000).toFixed(1)}B ${POLYMARKET_COLLATERAL_ASSET}`
+  if (vol >= 1_000_000) return `${(vol / 1_000_000).toFixed(1)}M ${POLYMARKET_COLLATERAL_ASSET}`
+  if (vol >= 1_000) return `${(vol / 1_000).toFixed(1)}K ${POLYMARKET_COLLATERAL_ASSET}`
+  return `${vol.toFixed(0)} ${POLYMARKET_COLLATERAL_ASSET}`
 }
 
 export function getPlatformColor(platform: Platform): string {

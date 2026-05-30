@@ -5,10 +5,6 @@ export const metadata: Metadata = {
   title: "MapSignal — Global Prediction Market Heatmap",
   description: "Interactive world map showing real-time prediction market probabilities from Polymarket, Kalshi, and Opinion. Track global events, elections, economics, and geopolitics.",
   keywords: "mapsignal, prediction market, polymarket, kalshi, opinion, heatmap, probability, global events",
-  icons: {
-    icon: "/icon.png",
-    apple: "/icon.png",
-  },
 };
 
 export default function RootLayout({
